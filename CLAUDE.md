@@ -349,18 +349,19 @@ This project follows the ARIA (Automated Research Intelligence Assistant) framew
 
 ## docs/ — Design Documents & PRDs
 
-The `docs/` directory holds decision records, PRDs, and data pipeline documentation.
-**Always check this directory before starting a task** — an open PRD may constrain
+Design documents and PRDs live at the **workspace level**: `../docs/` (i.e.,
+`/wendylab-swolfpy/docs/`, one directory above this repo).
+**Always check that directory before starting a task** — an open PRD may constrain
 your approach.  When a task completes or the architecture changes, update or close
 the relevant document.
 
 | File | Description | Status |
 |------|-------------|--------|
-| `docs/PRD_ecoinvent_upgrade.md` | Upgrade background LCI from ecoinvent 3.5 → 3.11/3.12 | Draft — blocked on ecoinvent license |
+| `../docs/PRD_ecoinvent_upgrade.md` | Upgrade background LCI from ecoinvent 3.5 → 3.11/3.12 | Draft — blocked on ecoinvent license |
 
 ### Rules for docs/
 
-- Create a new `PRD_<feature>.md` whenever a non-trivial feature is scoped
+- Create a new `PRD_<feature>.md` in `../docs/` whenever a non-trivial feature is scoped
   (more than ~2 days of work, or involving external data/licenses)
 - Update the table above whenever a doc is added, closed, or its status changes
 - Use the status values: **Draft**, **In Progress**, **Complete**, **Superseded**
