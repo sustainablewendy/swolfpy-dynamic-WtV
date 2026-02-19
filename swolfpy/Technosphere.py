@@ -1,10 +1,28 @@
 # -*- coding: utf-8 -*-
 import warnings
 
+import bw2data as bd
 import bw2io
+import bw2io.importers.base_lcia as _bw2io_lcia
 import pandas as pd
-from brightway2 import Database, bw2setup, databases, projects
 from swolfpy_inputdata import Technosphere_Input
+
+# ── Compatibility shim ────────────────────────────────────────────────────────
+# bw2io 0.9.x passes list-format biosphere keys to bw2data 4.x Method.write(),
+# which requires tuples (list keys raise ValueError in bw2data ≥4.0).
+# Patch LCIAImporter._reformat_cfs once at import time to convert list → tuple.
+_orig_reformat_cfs = _bw2io_lcia.LCIAImporter._reformat_cfs
+
+
+def _compat_reformat_cfs(self, ds):
+    return [
+        (tuple(obj["input"]) if isinstance(obj["input"], list) else obj["input"], obj["amount"])
+        for obj in ds
+    ]
+
+
+_bw2io_lcia.LCIAImporter._reformat_cfs = _compat_reformat_cfs
+# ─────────────────────────────────────────────────────────────────────────────
 
 from .Required_keys import biosphere_keys
 from .swolfpy_method import import_methods
@@ -47,9 +65,9 @@ class Technosphere:
         `SWOLF_AccountMode_LCI DATA.csv` in the `Data` folder unless user select new file with it's `path`.
 
         """
-        projects.set_current(self.project_name)
-        bw2setup()
-        db = Database("biosphere3")
+        bd.projects.set_current(self.project_name)
+        bw2io.bw2setup()
+        db = bd.Database("biosphere3")
         if len(db.search("capital cost")) == 0:
             db.new_activity(
                 code="Capital_Cost",
@@ -112,13 +130,13 @@ class Technosphere:
         import_methods()
 
         # Deleting the old (expired) databases (if exist)
-        xx = list(databases)
+        xx = list(bd.databases)
         for x in xx:
             if x not in ["biosphere3"]:
-                del databases[x]
+                del bd.databases[x]
         if self.LCI_reference["Reference_activity_id"].count() > 0:
             self._Write_user_technosphere()
-            db = Database(self.user_tech_name)
+            db = bd.Database(self.user_tech_name)
             self.user_tech_keys = {}
             for x in db:
                 self.user_tech_keys[x.as_dict()["activity"]] = x.key
@@ -150,21 +168,23 @@ class Technosphere:
             print("\nAdd unlinked flows to biosphere database:\n")
             self.user_tech.add_unlinked_flows_to_biosphere_database()
 
-        print(
-            """
+        print("""
                 ####
                 ++++++  Writing the {}
-                """.format(
-                self.user_tech_name
-            )
-        )
+                """.format(self.user_tech_name))
         self.user_tech.write_database()
 
     def _write_technosphere(self):
         """
         Creates the swolfpy technosphere database.
+
+        Biosphere exchanges whose flow does not exist in the current biosphere3
+        are skipped with a warning.  This handles the small number of legacy
+        ecoinvent 3.5 UUIDs that were removed or renamed in later biosphere3
+        releases (e.g. Metiram → not found; Tri-allate → not found).
         """
         self.technosphere_data = {}
+        skipped_flows: set = set()
         # activities
         names = list(self.LCI_swolfpy_data.columns)[3:]
         for x in names:
@@ -172,9 +192,9 @@ class Technosphere:
             self.technosphere_data[(self.technosphere_db_name, x)] = {
                 "name": x,
                 "reference product": x,
-                "unit": "NA"
-                if pd.isnull(self.LCI_swolfpy_data[x][0])
-                else self.LCI_swolfpy_data[x][0],
+                "unit": (
+                    "NA" if pd.isnull(self.LCI_swolfpy_data[x][0]) else self.LCI_swolfpy_data[x][0]
+                ),
                 "exchanges": [],
             }
             # Reference flow
@@ -189,9 +209,18 @@ class Technosphere:
                 i = 0
                 for val in self.LCI_swolfpy_data[x][2:]:
                     if float(self._check_nan(val)) != 0:
+                        bio_key = biosphere_keys[i][0]
+                        # bw2data ≥4.0 validates biosphere flows at write time;
+                        # skip exchanges whose flow no longer exists in biosphere3.
+                        try:
+                            bd.get_node(database=bio_key[0], code=bio_key[1])
+                        except bd.errors.UnknownObject:
+                            skipped_flows.add(bio_key)
+                            i += 1
+                            continue
                         ex = {}  # add exchange to activities
                         ex["amount"] = float(self._check_nan(val))
-                        ex["input"] = biosphere_keys[i][0]
+                        ex["input"] = bio_key
                         ex["type"] = "biosphere"
                         ex["unit"] = "kg"
                         self.technosphere_data[(self.technosphere_db_name, x)]["exchanges"].append(
@@ -214,15 +243,20 @@ class Technosphere:
                 ex["unit"] = self.LCI_reference["Cost_Unit"][x]
                 self.technosphere_data[(self.technosphere_db_name, x)]["exchanges"].append(ex)
 
-        print(
-            """
+        if skipped_flows:
+            warnings.warn(
+                f"_write_technosphere: skipped {len(skipped_flows)} biosphere exchange(s) "
+                "because their flow does not exist in the current biosphere3 database "
+                "(legacy ecoinvent 3.5 UUIDs no longer present).  "
+                f"Skipped keys: {skipped_flows}",
+                stacklevel=2,
+            )
+
+        print("""
                 ####
                 ++++++  Writing the {}
-                """.format(
-                self.technosphere_db_name
-            )
-        )
-        self.technosphere_db = Database(self.technosphere_db_name)
+                """.format(self.technosphere_db_name))
+        self.technosphere_db = bd.Database(self.technosphere_db_name)
         self.technosphere_db.write(self.technosphere_data)
         # replace zeros when there is no data ("nan")
 

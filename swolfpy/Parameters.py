@@ -158,12 +158,10 @@ class Parameters:
         try:
             self.network.render(filename + ".gv", view=view)
         except Exception:
-            print(
-                """
+            print("""
             To render the generated DOT source code, you also need to install Graphviz (`Graphviz <https://www.graphviz.org/download>`_).\n
             Make sure that the directory containing the dot executable is on your systems’ path.
-            """
-            )
+            """)
 
     def add_edge(self, head, tail, name, value=None):
         if isinstance(value, (int, float)):

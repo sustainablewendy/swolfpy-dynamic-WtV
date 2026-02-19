@@ -2,9 +2,9 @@
 import multiprocessing as mp
 import os
 
+import bw2data as bd
 import numpy as np
 import pandas as pd
-from brightway2 import LCA, projects
 
 from .LCA_matrix import LCA_matrix
 
@@ -43,15 +43,15 @@ class Monte_Carlo(LCA_matrix):
 
     def __init__(
         self,
-        functional_unit,
-        method,
-        project,
+        functional_unit: dict,
+        method: list,
+        project: str,
         process_models=None,
         process_model_names=None,
         common_data=None,
         parameters=None,
         seed=None,
-    ):
+    ) -> None:
         super().__init__(functional_unit, method)
 
         self.process_models = process_models
@@ -59,12 +59,9 @@ class Monte_Carlo(LCA_matrix):
         self.parameters = parameters
         self.common_data = common_data
         self.project = project
-        if seed:
-            self.seed = seed
-        else:
-            self.seed = 0
+        self.seed = seed if seed else 0
 
-    def run(self, nproc, n):
+    def run(self, nproc: int, n: int) -> None:
         """
         Runs the Monte Carlo ``n`` times with ``nproc`` processors. Calls and map the
         ``Monte_Carlo.worker()`` to the processors.
@@ -101,17 +98,15 @@ class Monte_Carlo(LCA_matrix):
             )
         self.results = [x for lst in res for x in lst]
 
-    # =============================================================================
-    #         res = Monte_Carlo.worker((self.project, self.functional_unit, self.method, self.parameters, self.process_models, self.process_model_names,
-    #                                   self.common_data, self.tech_matrix, self.bio_matrix, self.seed, n//nproc))
-    #         self.results = [x for lst in res for x in lst]
-    # =============================================================================
-
     @staticmethod
     def worker(args):
         """
         Setups the Monte Carlo for process models and input data and then creates the
-        ``LCA`` object and Calls the ``Monte_Carlo.parallel_mc()`` for `n` times.
+        ``LCA_matrix`` object and calls ``Monte_Carlo.parallel_mc()`` for `n` times.
+
+        Uses ``LCA_matrix`` (instead of the bare ``bc.LCA``) so that
+        ``rebuild_technosphere_matrix`` / ``rebuild_biosphere_matrix`` and the
+        COO index arrays are available inside ``parallel_mc``.
         """
         (
             project,
@@ -126,7 +121,9 @@ class Monte_Carlo(LCA_matrix):
             seed,
             n,
         ) = args
-        projects.set_current(project, writable=False)
+
+        bd.projects.set_current(project, writable=False)
+
         if common_data:
             common_data.setup_MC(seed + 100000)
         if process_models:
@@ -135,9 +132,10 @@ class Monte_Carlo(LCA_matrix):
         if parameters:
             parameters.setup_MC(seed + 200000)
 
-        lca = LCA(functional_unit, method[0])
-        lca.lci()
-        lca.lcia()
+        # LCA_matrix already calls lci(), lcia(), remap_inventory_dicts() and
+        # stores COO index arrays — required by rebuild_*_matrix in parallel_mc.
+        lca = LCA_matrix(functional_unit, method)
+
         return [
             Monte_Carlo.parallel_mc(
                 lca,
@@ -156,9 +154,9 @@ class Monte_Carlo(LCA_matrix):
     @staticmethod
     def parallel_mc(
         lca,
-        method,
-        tech_matrix,
-        bio_matrix,
+        method: list,
+        tech_matrix: dict,
+        bio_matrix: dict,
         process_models=None,
         process_model_names=None,
         parameters=None,
@@ -170,7 +168,8 @@ class Monte_Carlo(LCA_matrix):
         ``parameters.MC_calc()`` and then gets the new LCI and updates the ``tech_matrix``
         and ``bio_matrix``.
 
-        Creates new ``bio_param`` and ``tech_param`` and then recalculate the LCA.
+        Rebuilds the sparse technosphere and biosphere matrices via the BW2.5-compatible
+        ``LCA_matrix.rebuild_*_matrix`` helpers, then recalculates the LCA.
 
         """
         uncertain_inputs = []
@@ -201,11 +200,11 @@ class Monte_Carlo(LCA_matrix):
         tech = np.array(list(tech_matrix.values()), dtype=float)
         bio = np.array(list(bio_matrix.values()), dtype=float)
 
+        # BW2.5-compatible matrix rebuild (replaces removed rebuild_*_matrix methods)
         lca.rebuild_technosphere_matrix(tech)
         lca.rebuild_biosphere_matrix(bio)
         lca.lci_calculation()
-        if lca.lcia:
-            lca.lcia_calculation()
+        lca.lcia_calculation()
 
         lca_results = {}
         lca_results[method[0]] = lca.score
@@ -220,7 +219,7 @@ class Monte_Carlo(LCA_matrix):
         return (os.getpid(), lca_results, uncertain_inputs)
 
     ### Export results
-    def result_to_DF(self):
+    def result_to_DF(self) -> pd.DataFrame:
         """
         Returns the results from the Monte Carlo in a ``pandas.DataFrame`` format.
 
@@ -239,7 +238,7 @@ class Monte_Carlo(LCA_matrix):
             ]
         return output
 
-    def save_results(self, name):
+    def save_results(self, name: str) -> None:
         """
         Save the results from the Monte Carlo to pickle file.
         """

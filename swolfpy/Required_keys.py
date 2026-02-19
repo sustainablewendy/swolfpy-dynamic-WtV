@@ -233,7 +233,9 @@ biosphere_keys = {
     229: [("biosphere3", "d3f5d0b9-0155-4800-9dbb-b0583948c8c6")],
     230: [("biosphere3", "379a827c-3290-4810-9689-b9e892945836")],
     231: [("biosphere3", "87f683ed-44ae-41a6-b4bc-230622f8cfef")],
-    232: [("biosphere3", "9c2a7dc9-8b1f-46ba-bc16-0d761a4f6016")],
+    232: [
+        ("biosphere3", "90f722bf-cb9b-571a-88fc-34286632bdc4")
+    ],  # Ethylene (was Ethene, ecoinvent 3.5)
     233: [("biosphere3", "36270548-9316-424b-9aeb-e0de134b0be1")],
     234: [("biosphere3", "2a51889e-9264-45df-9753-64c25a755d9e")],
     235: [("biosphere3", "127ff74d-018b-43b9-8a4e-fb5577d5ee5a")],
@@ -303,7 +305,9 @@ biosphere_keys = {
     299: [("biosphere3", "8e906def-6bd5-4248-ac2b-94e6eedde3c9")],
     300: [("biosphere3", "50f3bc1e-fafc-44a2-9800-4468d8c3b643")],
     301: [("biosphere3", "68e32537-beae-41c2-be72-74df4d273c11")],
-    302: [("biosphere3", "c941d6d0-a56c-4e6c-95de-ac685635218d")],
+    302: [
+        ("biosphere3", "c9a8073a-8a19-5b9b-a120-7d549563b67b")
+    ],  # Hydrochloric acid (was Hydrogen chloride, ecoinvent 3.5)
     303: [("biosphere3", "afcbd980-14c2-4e1d-a0aa-5f6464e5c76b")],
     304: [("biosphere3", "8b7dc667-f04e-492c-a161-80b1482126b0")],
     305: [("biosphere3", "24541c8c-9f11-49ae-9de5-456f238a3f5e")],
@@ -361,7 +365,9 @@ biosphere_keys = {
     357: [("biosphere3", "5ec9c16a-959d-44cd-be7d-a935727d2151")],
     358: [("biosphere3", "71234253-b3a7-4dfe-b166-a484ad15bee7")],
     359: [("biosphere3", "a850e6de-a007-432f-be7f-ce6e2cf1f2ae")],
-    360: [("biosphere3", "b53d3744-3629-4219-be20-980865e54031")],
+    360: [
+        ("biosphere3", "5f7aad3d-566c-4d0d-ad59-e765f971aa0f")
+    ],  # Methane, fossil (was Methane, ecoinvent 3.5)
     361: [("biosphere3", "8c283de2-50d3-40c8-8bff-1e172c3398f8")],
     362: [("biosphere3", "494eb62d-3e16-4a81-b344-6d6dfd9fd4e2")],
     363: [("biosphere3", "82957257-07f3-4536-ac8b-175cb2353c75")],
@@ -696,7 +702,9 @@ biosphere_keys = {
     692: [("biosphere3", "b878ca93-d699-421e-a4b6-f694dc627062")],
     693: [("biosphere3", "e2c5109f-9a68-4828-b824-eb2193864803")],
     694: [("biosphere3", "0878c1c6-4c1d-4f90-a2de-a9383855d5c6")],
-    695: [("biosphere3", "43b2649e-26f8-400d-bc0a-a0667e850915")],
+    695: [
+        ("biosphere3", "0d218f74-181d-49b6-978c-8af836611102")
+    ],  # Gangue (was Gangue, bauxite, in ground, ecoinvent 3.5)
     696: [("biosphere3", "3ed5f377-344f-423a-b5ec-9a9a1162b944")],
     697: [("biosphere3", "7c337428-fb1b-45c7-bbb2-2ee4d29e17ba")],
     698: [("biosphere3", "ff741136-d6ee-444a-a15b-3b308e376db8")],
@@ -954,7 +962,9 @@ biosphere_keys = {
     950: [("biosphere3", "3c054a6e-2f9c-4e5e-9231-c61bc85a250a")],
     951: [("biosphere3", "62859da4-f3c5-417b-a575-8b00d8d658b1")],
     952: [("biosphere3", "7f8fd1ca-0412-4b2e-90fd-a9d294d947a3")],
-    953: [("biosphere3", "d07867e3-66a8-4454-babd-78dc7f9a21f8")],
+    953: [
+        ("biosphere3", "91d68678-7ed7-417a-86a7-a486c7b8a973")
+    ],  # Carfentrazone-ethyl (was Carfentrazone ethyl ester, ecoinvent 3.5)
     954: [("biosphere3", "91d68678-7ed7-417a-86a7-a486c7b8a973")],
     955: [("biosphere3", "99fd89e9-829f-4998-9ac0-85da6442fd02")],
     956: [("biosphere3", "2e3da68d-e404-4377-bce9-b35244980811")],
@@ -1060,7 +1070,9 @@ biosphere_keys = {
     1056: [("biosphere3", "3850d44e-8919-47bc-9c0a-51ccc4ec9d9f")],
     1057: [("biosphere3", "b4f9a201-2a20-4f41-a572-eabc98c75e1b")],
     1058: [("biosphere3", "b59aad72-50dd-4938-93bd-9ed99ab720af")],
-    1059: [("biosphere3", "66a6dad0-e450-4206-88e1-f823a04f8b1d")],
+    1059: [
+        ("biosphere3", "a058168e-9a1e-5126-80b6-2d202e746835")
+    ],  # Haloxyfop-P-methyl (was Haloxyfop-(R) Methylester, ecoinvent 3.5)
     1060: [("biosphere3", "3941d87e-6d5c-45d0-9fd5-16e3b948431c")],
     1061: [("biosphere3", "4c99e2cb-60ae-499e-aae1-c983fb3bd9f2")],
     1062: [("biosphere3", "f5613910-92ec-4bf3-9585-926749432289")],
@@ -1187,7 +1199,9 @@ biosphere_keys = {
     1183: [("biosphere3", "658441e6-f7a0-4ce5-bbe7-329a2a9e31c8")],
     1184: [("biosphere3", "80059f17-e3f9-4041-9fdc-31658ce27288")],
     1185: [("biosphere3", "99f78a2c-48e3-492c-aa5a-ed0c2f24a1a0")],
-    1186: [("biosphere3", "f9c73aca-3d5c-4072-81dd-b8e0643530a6")],
+    1186: [
+        ("biosphere3", "9ae11925-3df9-5fde-b7af-1627c0818347")
+    ],  # Quizalofop-ethyl (was Quizalofop ethyl ester, ecoinvent 3.5)
     1187: [("biosphere3", "be206401-d803-4b14-8319-53b916e9beef")],
     1188: [("biosphere3", "7bddbf65-6f39-4ae1-bddf-d8d4632c8efe")],
     1189: [("biosphere3", "8b4f0e68-38d5-4bee-b647-680d3a117560")],
@@ -1490,7 +1504,9 @@ biosphere_keys = {
     1486: [("biosphere3", "e6360e00-79a2-455e-ac9d-2e3159736771")],
     1487: [("biosphere3", "ab9fef9d-1b47-4d79-a28a-0132dfa18020")],
     1488: [("biosphere3", "c708b024-c922-4c43-8a49-81c472c48f75")],
-    1489: [("biosphere3", "e3043a7f-5347-4c7b-89ee-93f11b2f6d9b")],
+    1489: [
+        ("biosphere3", "33fd8342-58e7-45c9-ad92-0951c002c403")
+    ],  # Iron ion (was Iron, ecoinvent 3.5)
     1490: [("biosphere3", "33fd8342-58e7-45c9-ad92-0951c002c403")],
     1491: [("biosphere3", "9b6d6f07-ebc6-447d-a3c0-f2017d77d852")],
     1492: [("biosphere3", "2c9a7182-37c8-4777-a37a-9a007c3edb2f")],
@@ -1547,7 +1563,9 @@ biosphere_keys = {
     1543: [("biosphere3", "e40fb8b9-a290-44df-9d22-71a164f0c2d9")],
     1544: [("biosphere3", "feb813f2-ff76-4f52-a966-55297494de4a")],
     1545: [("biosphere3", "56815b4f-6138-4e0b-9fac-c94fd6b102b3")],
-    1546: [("biosphere3", "e030108f-2125-4bcb-a73b-ad72130fcca3")],
+    1546: [
+        ("biosphere3", "56815b4f-6138-4e0b-9fac-c94fd6b102b3")
+    ],  # Nickel II (was Nickel, ion, ecoinvent 3.5)
     1547: [("biosphere3", "9f69cb8e-51fe-447b-a1ac-4da74de8ebe4")],
     1548: [("biosphere3", "23cb10a4-6228-4ce4-9fb5-7043bc31faec")],
     1549: [("biosphere3", "9798359e-a3ee-4362-a038-23a188582c6e")],
@@ -1599,7 +1617,9 @@ biosphere_keys = {
     1595: [("biosphere3", "c6976591-c1f2-4c53-b9ff-182db73f0a7f")],
     1596: [("biosphere3", "f81d8b52-b588-45d6-ba49-e7d53ade5bb5")],
     1597: [("biosphere3", "c21a1397-82dc-427a-a6cb-c790ba2626f4")],
-    1598: [("biosphere3", "a07b8a8c-8cab-4656-a82f-310e8069e323")],
+    1598: [
+        ("biosphere3", "c21a1397-82dc-427a-a6cb-c790ba2626f4")
+    ],  # Potassium I (was Potassium, ion, ecoinvent 3.5)
     1599: [("biosphere3", "b93fc4df-91b2-4ac4-a315-89147515ddfb")],
     1600: [("biosphere3", "297cc04f-e215-433c-ae3b-d1e34464c785")],
     1601: [("biosphere3", "1653bf60-f682-4088-b02d-6dc44eae2786")],
@@ -1671,7 +1691,9 @@ biosphere_keys = {
     1667: [("biosphere3", "5efff566-462f-4ded-b5b4-6761cf50c376")],
     1668: [("biosphere3", "37d35fd0-7f07-4b9b-92eb-de3c27050172")],
     1669: [("biosphere3", "28bca51a-6cc7-46af-961a-fd2b675a1376")],
-    1670: [("biosphere3", "b8c794de-ac20-47f6-ae87-84d91e95da93")],
+    1670: [
+        ("biosphere3", "31eacbfc-683a-4d36-afc1-80dee42a3b94")
+    ],  # Sulfate (was Sulfate, ion, ecoinvent 3.5)
     1671: [("biosphere3", "4870313f-52a4-4c41-8a08-a25745f2fce9")],
     1672: [("biosphere3", "0e940fff-f3ba-41b4-a5c6-d53a88bfc707")],
     1673: [("biosphere3", "ad0ce2f1-e6ca-4ab4-a9e7-b9c0137a8e00")],

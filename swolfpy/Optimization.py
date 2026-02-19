@@ -8,11 +8,11 @@ from multiprocessing import Pool, cpu_count
 from multiprocessing.dummy import Pool as ThreadPool
 from time import time
 
+import bw2data as bd
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import pyDOE
-from brightway2 import projects
 from plotly.offline import plot
 from scipy.optimize import minimize
 
@@ -154,8 +154,7 @@ class Optimization(LCA_matrix):
             self.rebuild_technosphere_matrix(tech)
             self.rebuild_biosphere_matrix(bio)
             self.lci_calculation()
-            if self.lcia:  # pylint: disable=using-constant-test
-                self.lcia_calculation()
+            self.lcia_calculation()
 
             self.oldx = list(x)
         return self.score / 10**self.magnitude
@@ -203,10 +202,10 @@ class Optimization(LCA_matrix):
         """
         self._objective_function(x)
         self.switch_method(impact)
-        self.lcia()
+        self.lcia_calculation()
         score = self.score
         self.switch_method(self._base_method)
-        self.lcia()
+        self.lcia_calculation()
         return score
 
     def _create_equality(self, N_param_Ingroup):
@@ -492,7 +491,7 @@ class Optimization(LCA_matrix):
     @staticmethod
     def worker(optObject, bnds, x0, iteration):
         start = time()
-        projects.set_current(optObject.project.project_name, writable=False)
+        bd.projects.set_current(optObject.project.project_name, writable=False)
         print("Iteration: {} PID: {}\n".format(iteration, os.getpid()))
         optObject.oldx = [0 for i in range(len(x0))]
         optObject.cons = optObject._create_constraints()
@@ -609,17 +608,13 @@ class Optimization(LCA_matrix):
 
             value.append(np.round(mass * frac, 3))
 
-        print(
-            """
+        print("""
               # Sankey Mass flows
               label = {}
               source = {}
               target = {}
               label_link = {}
-              value = {}""".format(
-                label, source, target, label_link, value
-            )
-        )
+              value = {}""".format(label, source, target, label_link, value))
 
         node = dict(
             pad=20,

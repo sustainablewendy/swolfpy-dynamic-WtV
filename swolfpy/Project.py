@@ -1,19 +1,11 @@
 # -*- coding: utf-8 -*-
 import pickle
 
+import bw2calc as bc
+import bw2data as bd
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from brightway2 import (
-    LCA,
-    Database,
-    Method,
-    MultiLCA,
-    calculation_setups,
-    get_activity,
-    parameters,
-    projects,
-)
 from bw2analyzer import ContributionAnalysis
 from bw2data.parameters import ActivityParameter
 
@@ -127,7 +119,7 @@ class Project:
         for p in self.processes:
             self.processTypes[p] = self.Treatment_processes[p]["model"].Process_Type
 
-        projects.set_current(self.project_name)
+        bd.projects.set_current(self.project_name)
 
         self.waste_treatment = {}
         for i in self.CommonData.All_Waste_Pr_Index:
@@ -189,8 +181,8 @@ class Project:
             elif self.Treatment_processes[DB_name]["model"].Process_Type == "RDF":
                 ProcessDB.init_DB(DB_name, ["RDF"])
 
-        Database("waste").register()
-        self.waste_BD = Database("waste")
+        bd.Database("waste").register()
+        self.waste_BD = bd.Database("waste")
 
         if signal:
             self._progress += 5
@@ -204,7 +196,7 @@ class Project:
         self.parameters_list = []
         self.act_include_param = {}
         for j in self.Treatment_processes:
-            (P, G) = self._import_database(j)
+            P, G = self._import_database(j)
             self.parameters_dict[j] = P
             self.act_include_param[j] = G
             self.parameters_list += P
@@ -232,27 +224,27 @@ class Project:
         self.process_model[name].Report = self.Treatment_processes[name]["model"].report()
 
         if self.Treatment_processes[name]["model"].Process_Type in ["Treatment", "Collection"]:
-            (P, G) = self.process_model[name].Write_DB(
+            P, G = self.process_model[name].Write_DB(
                 waste_flows=self.CommonData.Index,
                 parameters=self.parameters,
                 Process_Type=self.Treatment_processes[name]["model"].Process_Type,
             )
 
         elif self.Treatment_processes[name]["model"].Process_Type == "Reprocessing":
-            (P, G) = self.process_model[name].Write_DB(
+            P, G = self.process_model[name].Write_DB(
                 waste_flows=self.CommonData.Reprocessing_Index,
                 parameters=self.parameters,
                 Process_Type=self.Treatment_processes[name]["model"].Process_Type,
             )
 
         elif self.Treatment_processes[name]["model"].Process_Type == "Transfer_Station":
-            (P, G) = self.process_model[name].Write_DB(
+            P, G = self.process_model[name].Write_DB(
                 waste_flows=self.Treatment_processes[name]["model"]._Extened_Index,
                 parameters=self.parameters,
                 Process_Type=self.Treatment_processes[name]["model"].Process_Type,
             )
         elif self.Treatment_processes[name]["model"].Process_Type == "RDF":
-            (P, G) = self.process_model[name].Write_DB(
+            P, G = self.process_model[name].Write_DB(
                 waste_flows=["RDF"],
                 parameters=self.parameters,
                 Process_Type=self.Treatment_processes[name]["model"].Process_Type,
@@ -290,16 +282,12 @@ class Project:
 
         """
         for j in self.processes:
-            print(
-                """
+            print("""
                   Grouping the exchanges with parameters in Database {}
-                  """.format(
-                    j
-                )
-            )
+                  """.format(j))
             if len(self.act_include_param[j]) > 0:
                 for r in self.act_include_param[j]:
-                    parameters.add_exchanges_to_group(j, r)
+                    bd.parameters.add_exchanges_to_group(j, r)
 
             if signal:
                 self._progress += 70 / len(self.processes)
@@ -335,7 +323,7 @@ class Project:
                 for k in self.parameters_list:
                     if k["name"] == j["name"]:
                         k["amount"] = j["amount"]
-            parameters.new_project_parameters(new_param_data)
+            bd.parameters.new_project_parameters(new_param_data)
             for j in self.processes:
                 if len(self.act_include_param[j]) > 0:
                     ActivityParameter.recalculate_exchanges(j)
@@ -359,7 +347,7 @@ class Project:
         for P in input_dict:
             for y in input_dict[P]:
                 if input_dict[P][y] != 0:
-                    unit_i = get_activity((P, y)).as_dict()["unit"].split(sep=" ")
+                    unit_i = bd.get_node(database=P, code=y).as_dict()["unit"].split(sep=" ")
                     if len(unit_i) > 1:
                         mass += float(unit_i[0]) * input_dict[P][y]
                     if unit_i[0] == "Mg/year":
@@ -381,23 +369,51 @@ class Project:
                     ).save()
 
     @staticmethod
-    def setup_LCA(name, functional_units, impact_methods):
+    def setup_LCA(name: str, functional_units: list, impact_methods: list) -> pd.DataFrame:
         """
-        Perform LCA by instantiating the ``bw2calc.multi_lca`` class from Brightway2.
+        Perform LCA using the Brightway 2.5 MultiLCA API.
 
-        ``bw2calc.multi_lca`` is a wrapper class for performing LCA calculations with many
-        functional units and LCIA methods.
+        :param name: Label prefix for functional unit rows in the results DataFrame.
+        :type name: str
 
+        :param functional_units: List of dicts ``[{(db, code): amount}, ...]``
+        :type functional_units: list
+
+        :param impact_methods: List of LCIA method tuples
+        :type impact_methods: list
+
+        :return: DataFrame with functional units as rows and impact methods as columns
+        :rtype: pd.DataFrame
         """
-        if len(functional_units) > 0 and len(impact_methods) > 0:
-            calculation_setups[name] = {"inv": functional_units, "ia": impact_methods}
-            MultiLca = MultiLCA(name)
-            index = [str(x) for x in list(MultiLca.all.keys())]
-            columns = [str(x) for x in impact_methods]
-            results = pd.DataFrame(MultiLca.results, columns=columns, index=index)
-            return results
-        else:
-            raise ValueError("Check the in inputs")
+        if not functional_units or not impact_methods:
+            raise ValueError(
+                "Check the inputs: functional_units and impact_methods must be non-empty"
+            )
+
+        # Build string-keyed demand dict required by BW2.5 MultiLCA
+        demands = {
+            f"{name}_{i}": bd.prepare_lca_inputs(fu, method=impact_methods[0])[0]
+            for i, fu in enumerate(functional_units)
+        }
+        method_config = {"impact_categories": impact_methods}
+        data_objs = bd.get_multilca_data_objs(
+            functional_units=demands,
+            method_config=method_config,
+        )
+        mlca = bc.MultiLCA(
+            demands=demands,
+            method_config=method_config,
+            data_objs=data_objs,
+        )
+        mlca.lci()
+        mlca.lcia()
+
+        index = list(demands.keys())
+        columns = [str(m) for m in impact_methods]
+        rows = []
+        for fu_label in index:
+            rows.append([mlca.scores.get((fu_label, m), 0.0) for m in impact_methods])
+        return pd.DataFrame(rows, index=index, columns=columns)
 
     @staticmethod
     def contribution_analysis(
@@ -418,7 +434,8 @@ class Project:
         * ``bw2analyzer.ContributionAnalysis.annotated_top_emissions``
 
         """
-        lca = LCA(functional_unit, impact_method)
+        fu, data_objs, _ = bd.prepare_lca_inputs(functional_unit, method=impact_method)
+        lca = bc.LCA(demand=fu, data_objs=data_objs)
         lca.lci()
         lca.lcia()
         impacts = []
