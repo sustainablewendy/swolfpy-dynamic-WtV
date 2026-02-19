@@ -1,31 +1,33 @@
 # -*- coding: utf-8 -*-
+import bw2calc as bc
+import bw2data as bd
 import numpy as np
 import pandas as pd
-from brightway2 import LCA, get_activity
+import scipy.sparse
 
 
-class LCA_matrix(LCA):
+class LCA_matrix(bc.LCA):
     """
-    This class translate the ``row`` and ``col`` of the ``tech_param`` and ``bio_param``
-    to the activity `key` in the Brightway2 database. Both the ``tech_param`` and
-    ``bio_param`` has the ``dtype=[('input', '<u4'), ('output', '<u4'), ('row', '<u4'),
-    ('col', '<u4'), ('type', 'u1'), ('uncertainty_type', 'u1'), ('amount', '<f4'), ('loc',
-    '<f4'), ('scale', '<f4'), ('shape', '<f4'), ('minimum', '<f4'), ('maximum', '<f4'),
-    ('negative', '?')])`` data type.
+    Translates the row and col indices of the technosphere and biosphere sparse matrices
+    to activity keys in the Brightway2 database.
 
-    ``self.tech_matrix`` is a dictionary that includes all the technosphere and waste exchanges as tuple ``(product,Feed)`` key and amount as value:
-    ``{(('LF', 'Aerobic_Residual'), ('SF1_product', 'Aerobic_Residual_MRDO')):0.828}``
+    ``self.tech_matrix`` is a dictionary that maps ``(product_key, activity_key)`` tuples
+    to exchange amounts. Example:
+    ``{(('LF', 'Aerobic_Residual'), ('SF1_product', 'Aerobic_Residual_MRDO')): 0.828}``
 
-    ``self.bio_matrix`` is a dictionary that includes all the biosphere exchanges as tuple ``(product,Feed)`` `key` and amount as `value`
-    ``{(('biosphere3', '0015ec22-72cb-4af1-8c7b-0ba0d041553c'), ('Technosphere', 'Boiler_Diesel')):6.12e-15}``
+    ``self.bio_matrix`` is a dictionary that maps ``(biosphere_key, activity_key)`` tuples
+    to exchange amounts. Example:
+    ``{(('biosphere3', '0015ec22-72cb-4af1-8c7b-0ba0d041553c'), ('Technosphere', 'Boiler_Diesel')): 6.12e-15}``
 
-    So we can update the ``tech_params`` and ``bio_params`` by tuple keys that are consistent with the keys
-    in the ``ProcessModel.report()``. Check :ref:`Process models class <ProcessModel>` for more info.
+    These dicts are updated by ``update_techmatrix`` and ``update_biomatrix`` and then
+    used to rebuild the sparse matrices for Monte Carlo and Optimization runs via
+    ``rebuild_technosphere_matrix`` and ``rebuild_biosphere_matrix``.
 
     """
 
-    def __init__(self, functional_unit, method):
-        super().__init__(functional_unit, method[0])
+    def __init__(self, functional_unit: dict, method: list) -> None:
+        fu, data_objs, _ = bd.prepare_lca_inputs(functional_unit, method=method[0])
+        super().__init__(demand=fu, data_objs=data_objs)
         self.lci()
         self.lcia()
 
@@ -33,27 +35,84 @@ class LCA_matrix(LCA):
         self.method = method
         self._base_method = method[0]
 
-        self.activities_dict, _, self.biosphere_dict = self.reverse_dict()
+        # Populate lca.dicts.{activity, product, biosphere} with actual keys
+        self.remap_inventory_dicts()
+
+        # Backward-compatible aliases (int → key reversed dicts)
+        self.activities_dict = self.dicts.activity.reversed
+        self.biosphere_dict = self.dicts.biosphere.reversed
+
+        # Build tech_matrix from sparse technosphere matrix (COO preserves entry order)
+        tech_coo = self.technosphere_matrix.tocoo()
+        self._tech_coo_rows = tech_coo.row.copy()
+        self._tech_coo_cols = tech_coo.col.copy()
+        self._tech_shape = self.technosphere_matrix.shape
 
         self.tech_matrix = {}
-        for i in self.tech_params:
-            self.tech_matrix[(self.activities_dict[i[2]], self.activities_dict[i[3]])] = i[6]
+        for i, j, v in zip(self._tech_coo_rows, self._tech_coo_cols, tech_coo.data):
+            row_key = self.dicts.product.reversed[i]
+            col_key = self.dicts.activity.reversed[j]
+            self.tech_matrix[(row_key, col_key)] = v
+
+        # Build bio_matrix from sparse biosphere matrix (COO preserves entry order)
+        bio_coo = self.biosphere_matrix.tocoo()
+        self._bio_coo_rows = bio_coo.row.copy()
+        self._bio_coo_cols = bio_coo.col.copy()
+        self._bio_shape = self.biosphere_matrix.shape
 
         self.bio_matrix = {}
-        for i in self.bio_params:
-            if (
-                self.biosphere_dict[i[2]],
-                self.activities_dict[i[3]],
-            ) not in self.bio_matrix.keys():
-                self.bio_matrix[(self.biosphere_dict[i[2]], self.activities_dict[i[3]])] = i[6]
+        _bio_seen: set = set()
+        for i, j, v in zip(self._bio_coo_rows, self._bio_coo_cols, bio_coo.data):
+            bio_key = self.dicts.biosphere.reversed[i]
+            col_key = self.dicts.activity.reversed[j]
+            key = (bio_key, col_key)
+            if key not in _bio_seen:
+                self.bio_matrix[key] = v
+                _bio_seen.add(key)
             else:
-                self.bio_matrix[
-                    (str(self.biosphere_dict[i[2]]) + " - 1", self.activities_dict[i[3]])
-                ] = i[6]
-                # print((str(biosphere_dict[i[2]]) + " - 1", activities_dict[i[3]]))
+                # Defensive: handle rare duplicate biosphere flows by appending suffix
+                self.bio_matrix[(str(bio_key) + " - 1", col_key)] = v
+
+    # ------------------------------------------------------------------
+    # Matrix rebuild helpers (BW2.5 replacement for rebuild_*_matrix)
+    # ------------------------------------------------------------------
+
+    def rebuild_technosphere_matrix(self, values: np.ndarray) -> None:
+        """
+        Rebuild the technosphere sparse matrix from an ordered array of values.
+
+        The values array must be in the same insertion order as ``self.tech_matrix``
+        (i.e., COO order from matrix initialisation).
+
+        :param values: New exchange amounts in COO entry order.
+        :type values: numpy.ndarray
+        """
+        self.technosphere_matrix = scipy.sparse.csr_matrix(
+            (values, (self._tech_coo_rows, self._tech_coo_cols)),
+            shape=self._tech_shape,
+        )
+
+    def rebuild_biosphere_matrix(self, values: np.ndarray) -> None:
+        """
+        Rebuild the biosphere sparse matrix from an ordered array of values.
+
+        The values array must be in the same insertion order as ``self.bio_matrix``
+        (i.e., COO order from matrix initialisation).
+
+        :param values: New exchange amounts in COO entry order.
+        :type values: numpy.ndarray
+        """
+        self.biosphere_matrix = scipy.sparse.csr_matrix(
+            (values, (self._bio_coo_rows, self._bio_coo_cols)),
+            shape=self._bio_shape,
+        )
+
+    # ------------------------------------------------------------------
+    # Static matrix update helpers
+    # ------------------------------------------------------------------
 
     @staticmethod
-    def update_techmatrix(process_name, report_dict, tech_matrix):
+    def update_techmatrix(process_name: str, report_dict: dict, tech_matrix: dict) -> None:
         """
         Updates the `tech_matrix` according to the  `report_dict`. `tech_matrix` is an
         instance of ``LCA_matrix.tech_matrix``. Useful for Monte Carlo simulation, and
@@ -176,7 +235,7 @@ class LCA_matrix(LCA):
                                     )
 
     @staticmethod
-    def update_biomatrix(process_name, report_dict, bio_matrix):
+    def update_biomatrix(process_name: str, report_dict: dict, bio_matrix: dict) -> None:
         """
         Updates the `bio_matrix` according to the  report_dict. `bio_matrix` is an
         instance of ``LCA_matrix.bio_matrix``. Useful for Monte Carlo simulation, and
@@ -262,7 +321,7 @@ class LCA_matrix(LCA):
                                     )
 
     @staticmethod
-    def get_mass_flow(LCA, process):
+    def get_mass_flow(LCA, process: str) -> float:
         """
         Calculates the total mass of flows to process based on the `supply_array` in
         ``bw2calc.lca.LCA``.
@@ -278,17 +337,17 @@ class LCA_matrix(LCA):
 
         """
         mass = 0
-        for i in LCA.activity_dict:
+        for i in LCA.dicts.activity:
             if process == i[0]:
-                unit = get_activity(i).as_dict()["unit"].split(" ")
+                unit = bd.get_node(database=i[0], code=i[1]).as_dict()["unit"].split(" ")
                 if len(unit) > 1:
-                    mass += LCA.supply_array[LCA.activity_dict[i]] * float(unit[0])
+                    mass += LCA.supply_array[LCA.dicts.activity[i]] * float(unit[0])
                 else:
-                    mass += LCA.supply_array[LCA.activity_dict[i]]
+                    mass += LCA.supply_array[LCA.dicts.activity[i]]
         return mass
 
     @staticmethod
-    def get_mass_flow_comp(LCA, process, index):
+    def get_mass_flow_comp(LCA, process: str, index) -> pd.Series:
         """
         Calculates the mass of flows to process based on the `index` and `supply_array` in
         ``bw2calc.lca.LCA``.
@@ -307,13 +366,13 @@ class LCA_matrix(LCA):
 
         """
         mass = pd.Series(np.zeros(len(index)), index=index)
-        for i in LCA.activity_dict:
+        for i in LCA.dicts.activity:
             if process == i[0]:
                 for j in index:
                     if j == i[1]:
-                        unit = get_activity(i).as_dict()["unit"].split(" ")
+                        unit = bd.get_node(database=i[0], code=i[1]).as_dict()["unit"].split(" ")
                         if len(unit) > 1:
-                            mass[j] += LCA.supply_array[LCA.activity_dict[i]] * float(unit[0])
+                            mass[j] += LCA.supply_array[LCA.dicts.activity[i]] * float(unit[0])
                         else:
-                            mass[j] += LCA.supply_array[LCA.activity_dict[i]]
+                            mass[j] += LCA.supply_array[LCA.dicts.activity[i]]
         return mass

@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
+import warnings
+
+import bw2data as bd
 import numpy as np
-from brightway2 import Database
+
+from .uuid_migration import BIOSPHERE_UUID_MIGRATION, migrate_biosphere_key
 
 
 class ProcessDB:
@@ -15,9 +19,9 @@ class ProcessDB:
         self.waste_treatment = waste_treatment
 
         # Databases
-        self.database_biosphere = Database("biosphere3")
-        self.database_Product = Database(self.P_Pr_Name)
-        self.database_Waste_technosphere = Database("Technosphere")
+        self.database_biosphere = bd.Database("biosphere3")
+        self.database_Product = bd.Database(self.P_Pr_Name)
+        self.database_Waste_technosphere = bd.Database("Technosphere")
 
     def check_nan(self, x):  # replace zeros when there is no data ("nan")
         if str(x) == "nan":
@@ -36,16 +40,12 @@ class ProcessDB:
                 "exchanges": [],
             }
 
-        print(
-            """
+        print("""
               ####
               ++++++ Initializing the {}
-              """.format(
-                DB_name
-            )
-        )
+              """.format(DB_name))
 
-        db = Database(DB_name)
+        db = bd.Database(DB_name)
         db.write(db_data)
 
     def Write_DB(self, waste_flows, parameters, Process_Type):
@@ -288,7 +288,31 @@ class ProcessDB:
 
             ### Adding the biosphere exchanges
             for key in self.Report["Biosphere"][x]:
-                ex = self.exchange(key, "biosphere", "kg", self.Report["Biosphere"][x][key])
+                # Remap legacy ecoinvent 3.5 UUIDs to their current biosphere3
+                # equivalents so that all exchanges are preserved (not skipped).
+                migrated_key = migrate_biosphere_key(key)
+                if (
+                    migrated_key == key
+                    and isinstance(key, tuple)
+                    and len(key) == 2
+                    and key[0] == "biosphere3"
+                ):
+                    # No migration entry — validate the key exists in biosphere3.
+                    # If it doesn't, skip with a warning (unmapped legacy UUID).
+                    try:
+                        bd.get_node(database=key[0], code=key[1])
+                    except bd.errors.UnknownObject:
+                        warnings.warn(
+                            f"ProcessDB.Write_DB: skipped biosphere exchange {key} for "
+                            f"activity '{x}' in '{self.P_Name}' — node not found in "
+                            "biosphere3 and no migration entry available "
+                            "(unmapped legacy ecoinvent 3.5 UUID).",
+                            stacklevel=2,
+                        )
+                        continue
+                ex = self.exchange(
+                    migrated_key, "biosphere", "kg", self.Report["Biosphere"][x][key]
+                )
                 self.db_data[(self.P_Name, x)]["exchanges"].append(ex)
 
             if Process_Type == "Collection":
@@ -425,26 +449,18 @@ class ProcessDB:
 
     def _write_DB_from_dict(self):
         if len(self.db_Pr_data) > 0:
-            print(
-                """
+            print("""
                   ####
                   ++++++ Writing the {}
-                  """.format(
-                    self.P_Pr_Name
-                )
-            )
+                  """.format(self.P_Pr_Name))
 
             self.database_Product.write(self.db_Pr_data)
 
-        print(
-            """
+        print("""
               ####
               ++++++ Writing the {}
-              """.format(
-                self.P_Name
-            )
-        )
-        db = Database(self.P_Name)
+              """.format(self.P_Name))
+        db = bd.Database(self.P_Name)
         db.write(self.db_data)
         self.uncertain_parameters.params_dict.update(self.params_dict)
 

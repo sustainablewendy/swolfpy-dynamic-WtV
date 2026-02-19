@@ -2,11 +2,13 @@
 """
 Tests for `swolfpy` package.
 """
-from brightway2 import Database, projects
+
+import bw2data as bd
 from swolfpy_inputdata import CommonData
 from swolfpy_processmodels import LF, WTE, Distance, SF_Col
 
 from swolfpy import Project, Technosphere
+from swolfpy.uuid_migration import original_biosphere_key
 
 
 def test_demo_swolfpy():
@@ -51,10 +53,10 @@ def test_demo_swolfpy():
     demo.write_project()
 
     ### Check the exchanges
-    projects.set_current(project_name)
+    bd.projects.set_current(project_name)
 
     def check_exchanges(name, report, waste_frac):
-        db = Database(name)
+        db = bd.Database(name)
         act = db.get(waste_frac)
         tech_flows = report["Technosphere"][common_data.Index[1]].keys()
         waste_flows = report["Waste"][common_data.Index[1]].keys()
@@ -68,10 +70,14 @@ def test_demo_swolfpy():
                     if y in x.input.key[1]:
                         assert report["Waste"][waste_frac][y] == x.amount
         bio_flows = report["Biosphere"][common_data.Index[1]].keys()
-        # Check the elementary exchanges
+        # Check the elementary exchanges.
+        # DB keys may use migrated (current) biosphere3 UUIDs while the process
+        # model report still carries legacy ecoinvent 3.5 UUIDs.  We use
+        # original_biosphere_key() to reverse-map DB keys back to report keys.
         assert len(act.biosphere()) == len(bio_flows)
         for x in act.biosphere():
-            assert report["Biosphere"][waste_frac][x.input.key] == x.amount
+            report_key = original_biosphere_key(x.input.key)
+            assert report["Biosphere"][waste_frac][report_key] == x.amount
 
     check_exchanges("LF", Treatment_processes["LF"]["model"].report(), common_data.Index[1])
     check_exchanges("LF", Treatment_processes["LF"]["model"].report(), common_data.Index[5])
@@ -82,7 +88,7 @@ def test_demo_swolfpy():
     demo.group_exchanges()
 
     def check_exchanges_with_param(name, report, waste_frac, param_dict):
-        db = Database(name + "_product")
+        db = bd.Database(name + "_product")
         waste_flows = report["Waste"][common_data.Index[1]].keys()
 
         for y in waste_flows:

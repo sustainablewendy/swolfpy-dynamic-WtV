@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import json
 
-import brightway2 as bw2
+import bw2data as bd
 import pandas as pd
 import plotly.graph_objects as go
 from plotly.offline import plot
@@ -34,7 +34,7 @@ def dump_method(methodName, path=None):
     """
     Dump the LCIA method to a `csv` file in `path` directory.
     """
-    method = bw2.Method(methodName)
+    method = bd.Method(methodName)
     data = method.load()
     key = []
     value = []
@@ -47,7 +47,8 @@ def dump_method(methodName, path=None):
         if "unit" not in method.metadata:
             method.metadata["unit"] = None
         unit.append(method.metadata["unit"])
-        act = bw2.get_activity(i[0])
+        # i[0] is a (db_name, code) tuple
+        act = bd.get_node(database=i[0][0], code=i[0][1])
         name.append(act.as_dict()["name"])
         categories.append(act.as_dict()["categories"])
     DF = pd.DataFrame(
@@ -67,7 +68,7 @@ def find_biosphere_flows(flow_name, compartment=None, subcompartment=None, exact
     key = []
     name = []
     categories = []
-    db = bw2.Database("biosphere3")
+    db = bd.Database("biosphere3")
     for act in db:
         act_dict = act.as_dict()
         if (exact_match and act_dict["name"] == flow_name) or (

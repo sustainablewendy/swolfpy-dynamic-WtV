@@ -725,8 +725,7 @@ class MyQtApp(PySWOLF_ui.Ui_MainWindow, QtWidgets.QMainWindow):
         help_col = QtWidgets.QTextBrowser(Frame2)
         help_col.setMinimumSize(QtCore.QSize(400, 300))
         F2_layout.addWidget(help_col, 0, 1, -1, 1)
-        help_col.setHtml(
-            """
+        help_col.setHtml("""
 
 <style>
 p {
@@ -771,8 +770,7 @@ ul {
   <li><b style="color:green">ORG</b><b>_DryRes</b>: Separate Organics & Mixed Dry Residuals</li>
   <li><b style="color:blue">REC</b><b>_WetRes</b>: Separate Recyclables & Mixed Wet Residuals</li>
 </ul>
-"""
-        )
+""")
 
         spacerItem_1 = QtWidgets.QSpacerItem(
             40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding
@@ -994,9 +992,9 @@ ul {
                         CommonDataObjct=self.CommonData,
                     )
 
-                self._Treatment_processes[Process_Name.text()][
-                    "input_type"
-                ] = self._ProcessMetaData[self._ProcessNameDict[Process.currentText()]]["InputType"]
+                self._Treatment_processes[Process_Name.text()]["input_type"] = (
+                    self._ProcessMetaData[self._ProcessNameDict[Process.currentText()]]["InputType"]
+                )
                 Process_Label.setFont(font1)
                 print(
                     "Process {} is added to dictionary as {}".format(
@@ -2693,8 +2691,7 @@ ul {
         else:
             n_iter = 1
 
-        print(
-            f"""
+        print(f"""
 Optimization setting:
 
 project_name = {project_name}
@@ -2713,8 +2710,7 @@ Initial guess generator = {self.opt_Widget.method.currentText()}
 
 Timeout = {self.opt_Widget.timeout.value()}
 
-constraints = {self.constraints}"""
-        )
+constraints = {self.constraints}""")
 
         if len(self.constraints) > 0:
             constraints = self.constraints
