@@ -308,15 +308,19 @@ This step ensures scientific rigor and catches:
 ```markdown
 ## Science Quality Review
 
-Reviewed by: /swm-lca-expert
-Status: ✅ Approved
-Date: YYYY-MM-DD
+**Reviewed by:** /swm-lca-expert
+**Status:** ✅ Approved
+**Date:** YYYY-MM-DD
+**Full Review:** `../docs/reviews/Review_PR-{number}_{feature-name}_{YYYY-MM-DD}.md`
 
-Key validations:
-- Mass balance verified for all temporal distributions
-- Biosphere flow categorization follows ecoinvent conventions
-- Temporal resolution consistent with bw_temporalis requirements
+### Key Validations
+
+- ✅ Mass balance verified for all temporal distributions
+- ✅ Biosphere flow categorization follows ecoinvent conventions
+- ✅ Temporal resolution consistent with bw_temporalis requirements
 - [other domain-specific checks...]
+
+**Link to detailed review report is MANDATORY** — always include the `Full Review:` line pointing to the saved markdown file in `../docs/reviews/`.
 ```
 
 **CRITICAL: If the expert approval includes ⚠️ warnings or deferred items:**
