@@ -273,6 +273,9 @@ class DynamicLCA:
         # Step 2: Build timeline
         self._timeline = self._temporalis_lca.build_timeline()
 
+        # Build dataframe representation (required before characterization)
+        self._timeline.build_dataframe()
+
         # Step 3: Characterize flows
         # Get flow node IDs for filtering
         flow_node_map = {}
