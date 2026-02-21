@@ -265,7 +265,100 @@ Bad commit messages:
 git push -u origin feature/<short-description>
 ```
 
-**7. Open a Pull Request**
+**7. Science Quality Review (MANDATORY)**
+
+**CRITICAL:** Before opening any PR, you MUST obtain approval from the Solid Waste Management
+LCA domain expert via the `/swm-lca-expert` slash command.
+
+This step ensures scientific rigor and catches:
+- Invalid LCA methodology (e.g., double-counting, system boundary errors)
+- Incorrect application of ISO 14040/14044 principles
+- Misuse of Brightway2 or Temporalis APIs
+- Temporal distribution errors (e.g., negative time offsets, mass balance violations)
+- Improper biosphere flow categorization
+- Invalid LCIA method application
+
+**Workflow:**
+
+```bash
+# Step 7a: Submit PR for science quality review
+# Use the /swm-lca-expert slash command:
+/swm-lca-expert Review this PR for LCA science quality:
+
+[Paste PR title]
+[Paste PR summary]
+[Paste key code sections with temporal distributions, biosphere flows, LCIA methods]
+
+# The expert will return a checklist like:
+#   ✅ Temporal distributions sum to exchange amount (mass balance OK)
+#   ✅ Biogenic CO2 handled separately from fossil CO2
+#   ⚠️  Warning: GWP characterization period hardcoded to 100y (document assumption)
+#   ❌ Error: TemporalDistribution uses timedelta64[Y] but should be [s]
+#
+# Step 7b: Address all ❌ errors and ⚠️ warnings
+# Fix issues, re-commit, re-run tests
+#
+# Step 7c: Re-submit to /swm-lca-expert
+# Iterate until expert returns: "✅ Science quality approved — ready for PR"
+```
+
+**Only after expert approval** may you proceed to step 8 (Open PR).
+
+**Expert approval must be included in the PR body** under a new section:
+```markdown
+## Science Quality Review
+
+Reviewed by: /swm-lca-expert
+Status: ✅ Approved
+Date: YYYY-MM-DD
+
+Key validations:
+- Mass balance verified for all temporal distributions
+- Biosphere flow categorization follows ecoinvent conventions
+- Temporal resolution consistent with bw_temporalis requirements
+- [other domain-specific checks...]
+```
+
+**CRITICAL: If the expert approval includes ⚠️ warnings or deferred items:**
+
+1. **Create TODO comments in the codebase** for every unaddressed warning:
+   ```python
+   # TODO(LCA-REVIEW-PR-{number}): {Brief warning description}
+   # Science review flagged: {Full warning text from expert}
+   # Recommendation: {What needs to be done}
+   # Tracked in: ../docs/reviews/Review_PR-{number}_{feature}_{date}.md
+   ```
+
+2. **Example** (from Phase 2 PRD review):
+   ```python
+   # TODO(LCA-REVIEW-PR-2): Add GWP100 time horizon justification
+   # Science review flagged: GWP characterization period hardcoded to 100y
+   # Recommendation: Add docstring note explaining IPCC AR6 alignment
+   # Tracked in: ../docs/reviews/Review_PR-2_phase2-prd-dynamic-lca_2026-02-21.md
+   def calculate(self, characterization_period: int = 100, ...) -> pd.DataFrame:
+       """
+       Run dynamic LCA calculation.
+
+       :param characterization_period: Time horizon in years (default 100 per IPCC AR6).
+           Note: Uses Joos et al. 2013 physics via bw_temporalis.lcia functions.
+       ...
+   ```
+
+3. **Tag format**: `TODO(LCA-REVIEW-PR-{number})` enables grep-based tracking:
+   ```bash
+   # Find all pending science review TODOs
+   grep -r "TODO(LCA-REVIEW-PR-" swolfpy/ tests/
+   ```
+
+4. **Resolution workflow**:
+   - When a TODO is addressed, remove the comment
+   - Add a line to the review markdown: `✅ Resolved: {TODO description} (commit {hash})`
+
+**Exemptions:** PRs that are documentation-only (like this PRD) OR trivial chores
+(dependency version bumps) may skip the science review, but MUST state
+`Science review: N/A (documentation only)` in the PR body.
+
+**8. Open a Pull Request**
 
 Every PR must include:
 - **Title**: same style as commit message (imperative, descriptive)
@@ -277,6 +370,7 @@ Every PR must include:
   - [ ] `black`, `isort`, `pylint` all pass
   - [ ] `CLAUDE.md` updated if architecture changed
   - [ ] No direct commits to `master`
+  - [ ] **Science quality review completed** (swm-lca-agent approval obtained, or N/A documented)
 
 **8. Code Review**
 
@@ -301,6 +395,9 @@ git checkout -b feature/my-feature
 pytest tests/ -v
 git add . && git commit -m "Add my feature with tests"
 git push -u origin feature/my-feature
+# → /swm-lca-expert "Review this PR for LCA science quality: [paste summary]"
+# → fix any issues flagged by expert
+# → obtain expert approval
 # → open PR on GitHub → request review → merge after approval
 ```
 
@@ -343,7 +440,9 @@ This project follows the ARIA (Automated Research Intelligence Assistant) framew
 1. Run `black`, `isort`, `pylint` — fix all issues
 2. Run `pytest` — all tests must pass
 3. Update this CLAUDE.md if the architecture changed
-4. Open a PR — never push directly to master
+4. **Submit to `/swm-lca-expert` for science quality review**
+5. Fix any issues flagged by the expert; iterate until approved
+6. Open a PR with expert approval documented — never push directly to master
 
 ---
 
@@ -355,16 +454,41 @@ Design documents and PRDs live at the **workspace level**: `../docs/` (i.e.,
 your approach.  When a task completes or the architecture changes, update or close
 the relevant document.
 
+### PRDs
+
 | File | Description | Status |
 |------|-------------|--------|
-| `../docs/PRD_ecoinvent_upgrade.md` | Upgrade background LCI from ecoinvent 3.5 → 3.11/3.12 | Draft — blocked on ecoinvent license |
+| `../docs/PRD_Data-Upgrade_ecoinvent-3.5-to-3.12_2026-02-19.md` | Upgrade background LCI from ecoinvent 3.5 → 3.11/3.12 | Draft — blocked on ecoinvent license |
+| `../docs/PRD_Phase-2_dynamic-lca-temporalis_2026-02-21.md` | Phase 2: Temporalis dynamic LCA integration (DynamicLCA class) | Draft — ready for implementation |
+
+### Science Quality Reviews
+
+All science quality reviews are saved to `../docs/reviews/` directory.
+
+**Naming convention**: `Review_PR-{number}_{feature-name}_{YYYY-MM-DD}.md`
+
+Examples:
+- `Review_PR-2_phase2-prd-dynamic-lca_2026-02-21.md`
+- `Review_PR-3_dynamic-lca-implementation_2026-02-25.md`
+- `Review_PR-3_dynamic-lca-implementation_2026-02-25_v2.md` (if re-reviewed)
+
+**The `/swm-lca-expert` slash command automatically saves reviews to this directory.**
+
+Each review report is a permanent record of the science quality gate for that PR.
+Check `../docs/reviews/` to see the history of all science validations.
 
 ### Rules for docs/
 
-- Create a new `PRD_<feature>.md` in `../docs/` whenever a non-trivial feature is scoped
+- **PRD naming convention**: `PRD_<Phase-or-Category>_<short-description>_YYYY-MM-DD.md`
+  - Examples: `PRD_Phase-2_dynamic-lca-temporalis_2026-02-21.md`, `PRD_Data-Upgrade_ecoinvent-3.5-to-3.12_2026-02-19.md`
+  - Date = creation date (helps sort chronologically)
+- **Review naming convention**: `Review_PR-{number}_{feature-name}_{YYYY-MM-DD}.md`
+  - Append `_v2`, `_v3`, etc. for re-reviews after fixes
+- Create a new PRD in `../docs/` whenever a non-trivial feature is scoped
   (more than ~2 days of work, or involving external data/licenses)
-- Update the table above whenever a doc is added, closed, or its status changes
+- Update the PRD table above whenever a doc is added, closed, or its status changes
 - Use the status values: **Draft**, **In Progress**, **Complete**, **Superseded**
+- Reviews are auto-generated by `/swm-lca-expert` — do not manually create them
 
 ---
 
