@@ -110,25 +110,26 @@ def my_function(param1: str, param2: int) -> pd.DataFrame:
 |------|---------|
 | `swolfpy/Project.py` | Main orchestrator — creates Brightway2 project, writes databases, runs LCA |
 | `swolfpy/LCA_matrix.py` | Constructs tech/bio matrices from process model reports |
+| `swolfpy/dynamic_lca.py` | ✅ `DynamicLCA` class — Temporalis integration for time-resolved carbon accounting |
 | `swolfpy/Monte_Carlo.py` | Parallel Monte Carlo simulation (multiprocessing) |
 | `swolfpy/Optimization.py` | Waste flow optimization (scipy-based) |
 | `swolfpy/Parameters.py` | Manages waste routing fractions (parameters) |
 | `swolfpy/ProcessDB.py` | Translates process model reports → Brightway2 database format |
 | `swolfpy/Technosphere.py` | Sets up Brightway2 technosphere structure |
 | `swolfpy/swolfpy_method.py` | Imports LCIA methods from CSV files |
+| `swolfpy/uuid_migration.py` | UUID migration table for legacy ecoinvent 3.5 biosphere flows |
 | `swolfpy/UI/` | PySide2 desktop GUI — can be improved; still uses `brightway2` imports that need BW2.5 migration |
+| `tests/test_dynamic_lca.py` | ✅ Tests for dynamic LCA module (temporal distributions, mass balance, timeline output) |
 
 ### Files to create (upcoming work)
 
 | File | Purpose |
 |------|---------|
-| `swolfpy/dynamic_lca.py` | `DynamicLCA` class — Temporalis integration |
 | `swolfpy/prospective_lca.py` | `ProspectiveLCA` class — Premise integration |
 | `api/main.py` | FastAPI app — compute bridge |
 | `api/routes/compute.py` | LCA, dynamic LCA, prospective LCA endpoints |
 | `api/routes/jobs.py` | Async job polling |
 | `api/cache.py` | Premise database disk cache |
-| `tests/test_dynamic_lca.py` | Tests for dynamic LCA module |
 | `tests/test_prospective_lca.py` | Tests for prospective LCA module |
 
 ---
@@ -459,7 +460,7 @@ the relevant document.
 | File | Description | Status |
 |------|-------------|--------|
 | `../docs/PRD_Data-Upgrade_ecoinvent-3.5-to-3.12_2026-02-19.md` | Upgrade background LCI from ecoinvent 3.5 → 3.11/3.12 | Draft — blocked on ecoinvent license |
-| `../docs/PRD_Phase-2_dynamic-lca-temporalis_2026-02-21.md` | Phase 2: Temporalis dynamic LCA integration (DynamicLCA class) | Draft — ready for implementation |
+| `../docs/PRD_Phase-2_dynamic-lca-temporalis_2026-02-21.md` | Phase 2: Temporalis dynamic LCA integration (DynamicLCA class) | In Progress — implementation complete, awaiting testing |
 
 ### Science Quality Reviews
 
@@ -497,7 +498,7 @@ Check `../docs/reviews/` to see the history of all science validations.
 **Active roadmap** (ordered by dependency):
 
 - [x] **Phase 1**: Brightway 2.5 upgrade — all core modules migrated; UI migration deferred to UI work
-- [ ] **Phase 2**: Temporalis integration — `swolfpy/dynamic_lca.py` + `tests/test_dynamic_lca.py`
+- [x] **Phase 2**: Temporalis integration — `swolfpy/dynamic_lca.py` + `tests/test_dynamic_lca.py` *(implementation complete, awaiting science review)*
 - [ ] **Phase 3**: Premise integration — `swolfpy/prospective_lca.py` *(needs ecoinvent license)*
 - [ ] **Phase 4**: FastAPI compute bridge — `api/main.py` + `api/routes/`
 - [ ] **Phase 5**: MCP server (SSE transport) + ChatGPT Developer Mode deploy

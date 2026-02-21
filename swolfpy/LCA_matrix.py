@@ -38,9 +38,12 @@ class LCA_matrix(bc.LCA):
         # Populate lca.dicts.{activity, product, biosphere} with actual keys
         self.remap_inventory_dicts()
 
-        # Backward-compatible aliases (int → key reversed dicts)
-        self.activities_dict = self.dicts.activity.reversed
-        self.biosphere_dict = self.dicts.biosphere.reversed
+        # Note: bc.LCA has properties `activity_dict` and `biosphere_dict` that return
+        # forward mappings (key → int). We need reversed mappings (int → key) for
+        # compatibility with swolfpy code (e.g., Optimization.py line 194).
+        # Use underscored names to avoid collision with parent class properties.
+        self._activities_dict_reversed = self.dicts.activity.reversed
+        self._biosphere_dict_reversed = self.dicts.biosphere.reversed
 
         # Build tech_matrix from sparse technosphere matrix (COO preserves entry order)
         tech_coo = self.technosphere_matrix.tocoo()

@@ -191,7 +191,7 @@ class Optimization(LCA_matrix):
         inventory = self.biosphere_matrix * self.supply_array
         emission_amount = 0
         for i in range(len(inventory)):
-            if emission == self.biosphere_dict[i]:
+            if emission == self._biosphere_dict_reversed[i]:
                 emission_amount += inventory[i]
         return emission_amount
 
