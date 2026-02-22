@@ -460,7 +460,7 @@ the relevant document.
 | File | Description | Status |
 |------|-------------|--------|
 | `../docs/PRD_Data-Upgrade_ecoinvent-3.5-to-3.12_2026-02-19.md` | Upgrade background LCI from ecoinvent 3.5 → 3.11/3.12 | Draft — blocked on ecoinvent license |
-| `../docs/PRD_Phase-2_dynamic-lca-temporalis_2026-02-21.md` | Phase 2: Temporalis dynamic LCA integration (DynamicLCA class) | In Progress — implementation complete, awaiting testing |
+| `../docs/PRD_Phase-2_dynamic-lca-temporalis_2026-02-21.md` | Phase 2: Temporalis dynamic LCA integration (DynamicLCA class) | Complete — merged to master 2026-02-22 |
 
 ### Science Quality Reviews
 
@@ -498,7 +498,7 @@ Check `../docs/reviews/` to see the history of all science validations.
 **Active roadmap** (ordered by dependency):
 
 - [x] **Phase 1**: Brightway 2.5 upgrade — all core modules migrated; UI migration deferred to UI work
-- [x] **Phase 2**: Temporalis integration — `swolfpy/dynamic_lca.py` + `tests/test_dynamic_lca.py` *(implementation complete, awaiting science review)*
+- [x] **Phase 2**: Temporalis integration — `swolfpy/dynamic_lca.py` + `tests/test_dynamic_lca.py` *(complete, merged 2026-02-22)*
 - [ ] **Phase 3**: Premise integration — `swolfpy/prospective_lca.py` *(needs ecoinvent license)*
 - [ ] **Phase 4**: FastAPI compute bridge — `api/main.py` + `api/routes/`
 - [ ] **Phase 5**: MCP server (SSE transport) + ChatGPT Developer Mode deploy
