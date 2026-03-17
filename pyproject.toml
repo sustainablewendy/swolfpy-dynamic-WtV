@@ -7,7 +7,7 @@ name = "swolfpy"
 dynamic = ["version", "readme", "dependencies"]
 description = "Solid Waste Optimization Life-cycle Framework in Python(SwolfPy)."
 license = {text = "GNU GENERAL PUBLIC LICENSE V2"}
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 authors = [
   {name = "Mojtaba Sardarmehni", email = "msardar2@alumni.ncsu.edu"},
 ]
@@ -75,6 +75,9 @@ python_files = [  # a list of patterns to use to collect test modules
   "tests/test_*.py"
 ]
 addopts = "--cov=swolfpy --cov-report=xml --disable-warnings --ignore=swolfpy/UI/ --color=yes"
+markers = [
+    "slow: marks tests requiring Premise DB generation (>30s) — skip with '-m not slow'",
+]
 
 #############################
 #######    pylint     #######
