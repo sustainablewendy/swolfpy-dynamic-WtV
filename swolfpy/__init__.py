@@ -9,6 +9,7 @@ import sys
 import warnings
 
 from .dynamic_lca import DynamicLCA
+from .prospective_lca import ProspectiveLCA
 from .Monte_Carlo import Monte_Carlo
 from .Optimization import Optimization
 from .Project import Project
@@ -34,6 +35,7 @@ except ImportError:  # PySide2 not installed or wrong Python version
 
 __all__ = [
     "DynamicLCA",
+    "ProspectiveLCA",
     "Technosphere",
     "Project",
     "import_methods",
